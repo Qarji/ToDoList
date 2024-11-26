@@ -8,30 +8,42 @@ description = """
 4. Выйти из программы
 
 Ваш выбор: """
-request = int(input(description))
 
-def show_list():
+def view_tasks():
     tasks = ""
     for id, task in enumerate(tasks_list):
         tasks += f'\n{id+1}. {task}'
     return tasks
 
-while request != 4:
-    if request == 1:
-        task_text = input('Введите текст задачи: ')
-        tasks_list.append(task_text)
-        print('Задача добавлена!')
-    elif request == 2:
-        print(f'Список задач:{show_list()}')
-    elif request == 3:
-        del_request = int(input(f'Список задач: {show_list()}\nВыберите номер задачи для удаления: '))
+def add_task():
+    task_text = input('Введите текст задачи: ')
+    tasks_list.append(task_text)
+    print('Задача добавлена!')
+
+def delete_task():
+    del_request = int(input(f'Список задач: {view_tasks()}\nВыберите номер задачи для удаления: '))
+    while True:
         try:
             del tasks_list[del_request-1]
             print('Задача удалена.')
+            break
         except:
             print('Такой задачи нет в списке.')
-    else:
-        print('Такой операции нет.')
-    request = int(input(description))
+
+def main():
+    while True:
+        request = int(input(description))
+        try:
+            if request == 1:
+                add_task()
+            if request == 2:
+                print(view_tasks())
+            if request == 3:
+                delete_task()
+            if request == 4:
+                break
+        except:
+            print('Такой операции нет.')
+    print('Программа завершена.')
     
-print('Программа завершена.')
+main()
