@@ -1,4 +1,5 @@
-tasks_list = []
+import sqlite3
+from datetime import datetime
 
 description = """
 Выберите действие:
@@ -9,41 +10,52 @@ description = """
 
 Ваш выбор: """
 
-def view_tasks():
-    tasks = ""
-    for id, task in enumerate(tasks_list):
-        tasks += f'\n{id+1}. {task}'
-    return tasks
+def view_tasks(cursor):
+    tasks = cursor.execute('SELECT rowid, name, body, date FROM Item').fetchall()
+    if not tasks:
+        return "Список задач пуст."
+    return '\n'.join([f'{rowid}. {name} | {body} | {date}' for rowid, name, body, date in tasks])
 
-def add_task():
+def add_task(cursor, conn):
+    task_name = input('Введите название задачи: ')
     task_text = input('Введите текст задачи: ')
-    tasks_list.append(task_text)
+    cursor.execute('INSERT INTO Item (name, body, date) VALUES (?, ?, ?)', (task_name, task_text, datetime.now().strftime('%d.%m.%Y')))
+    conn.commit()
     print('Задача добавлена!')
 
-def delete_task():
-    del_request = int(input(f'Список задач: {view_tasks()}\nВыберите номер задачи для удаления: '))
+def delete_task(cursor, conn):
     while True:
         try:
-            del tasks_list[del_request-1]
-            print('Задача удалена.')
-            break
-        except:
-            print('Такой задачи нет в списке.')
+            del_request = int(input(f'Список задач: {view_tasks()}\nВыберите номер задачи для удаления: '))
+            cursor.execute('SELECT 1 FROM Item WHERE rowid = ?', (del_request,))
+            if cursor.fetchone() is None:
+                print('Такой задачи нет в списке.')
+            else:
+                cursor.execute('DELETE FROM Item WHERE rowid = ?', (del_request,))
+                conn.commit()
+                print('Задача удалена успешно.')
+                break
+        except ValueError:
+            print('Введите корректное число.')
 
 def main():
-    while True:
-        request = int(input(description))
-        try:
-            if request == 1:
-                add_task()
-            if request == 2:
-                print(view_tasks())
-            if request == 3:
-                delete_task()
-            if request == 4:
-                break
-        except:
-            print('Такой операции нет.')
-    print('Программа завершена.')
-    
+    with sqlite3.connect('Tasks.db') as conn:
+        cursor = conn.cursor()
+        actions = {
+            1: lambda: add_task(cursor, conn),
+            2: lambda: print(view_tasks(cursor)),
+            3: lambda: delete_task(cursor, conn),
+        }
+        
+        while True:
+            try:
+                request = int(input(description))
+                if request == 4:
+                    break
+                action = actions.get(request)
+                if action:
+                    action()
+            except:
+                print('Такой команды нет.')
+        print('Программа завершена.')
 main()
